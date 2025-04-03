@@ -1,0 +1,102 @@
+import os
+import random
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from collections import Counter
+import string
+import re
+
+def generate_random_text(length=500):
+    letters = string.ascii_lowercase + " "  # только строчные буквы и пробел
+    return ''.join(random.choice(letters) for _ in range(length))
+
+def write_random_text_to_file(filename, length=500):
+    text = generate_random_text(length)
+    with open(filename, 'w') as f:
+        f.write(text)
+
+def read_text_from_file(filename):
+    with open(filename, 'r') as f:
+        return f.read()
+
+def count_words(text):
+    words = text.split()
+    return len(words)
+
+def word_frequency(text):
+    words = text.split()
+    word_counts = Counter(words)
+    return word_counts
+
+def clean_text(text):
+    return re.sub(r'[^\w\s]', '', text)
+
+def plot_word_frequency(word_counts):
+    labels, values = zip(*word_counts.most_common(10))
+    plt.figure(figsize=(10, 6))
+    plt.bar(labels, values, color='skyblue')
+    plt.title("Top 10 Most Frequent Words")
+    plt.xlabel("Words")
+    plt.ylabel("Frequency")
+    plt.xticks(rotation=45)
+    plt.show()
+
+def generate_random_data(rows=100):
+    data = {
+        'Name': [f'Name_{i}' for i in range(rows)],
+        'Age': [random.randint(18, 60) for _ in range(rows)],
+        'Salary': [random.randint(30000, 100000) for _ in range(rows)],
+        'Department': [random.choice(['HR', 'Engineering', 'Sales', 'Marketing']) for _ in range(rows)]
+    }
+    df = pd.DataFrame(data)
+    return df
+
+def analyze_data(df):
+    print("Basic Information about Data:")
+    print(df.info())
+    print("\nStatistics Summary:")
+    print(df.describe())
+    print("\nAge Distribution Histogram:")
+    df['Age'].hist(bins=15)
+    plt.title("Age Distribution")
+    plt.xlabel("Age")
+    plt.ylabel("Frequency")
+    plt.show()
+
+    print("\nSalary vs Department Boxplot:")
+    df.boxplot(column='Salary', by='Department')
+    plt.title("Salary Distribution by Department")
+    plt.suptitle("")
+    plt.xlabel("Department")
+    plt.ylabel("Salary")
+    plt.show()
+
+def create_random_csv(filename, rows=100):
+    df = generate_random_data(rows)
+    df.to_csv(filename, index=False)
+
+def analyze_text(text):
+    cleaned_text = clean_text(text)
+    word_counts = word_frequency(cleaned_text)
+    print("Word Count:", count_words(cleaned_text))
+    plot_word_frequency(word_counts)
+
+def main():
+    text_filename = 'random_text.txt'
+    write_random_text_to_file(text_filename, length=1000)
+
+    text = read_text_from_file(text_filename)
+    
+    print("\nText Analysis:")
+    analyze_text(text)
+
+    csv_filename = 'random_data.csv'
+    create_random_csv(csv_filename, rows=150)
+
+    df = pd.read_csv(csv_filename)
+    print("\nData Analysis:")
+    analyze_data(df)
+
+if __name__ == "__main__":
+    main()
