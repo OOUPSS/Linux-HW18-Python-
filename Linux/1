@@ -1,0 +1,70 @@
+#!/bin/bash
+
+LOG_DIR="/var/log/system_monitor"
+REPORT_DIR="/var/reports"
+ARCHIVE_DIR="/var/archives"
+EMAIL="admin@example.com"
+TMP_DIR="/tmp"
+TIMEZONE="UTC"
+
+ARCHIVE_RETENTION_DAYS=30
+LOG_RETENTION_DAYS=7
+
+create_directory() {
+  if [ ! -d "$1" ]; then
+    mkdir -p "$1"
+  fi
+}
+
+collect_system_info() {
+  echo "=== Информация о системе ==="
+  echo "Дата и время: $(date)"
+  echo "Использование процессора: $(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')%"
+  echo "Общее количество памяти: $(free -h | grep Mem | awk '{print $2}')"
+  echo "Использование памяти: $(free -h | grep Mem | awk '{print $3}') / $(free -h | grep Mem | awk '{print $2}')"
+  echo "Свободное место на диске: $(df -h | grep '^/dev' | awk '{print $4 " of " $2 " used on " $6}')"
+  echo "================================="
+}
+
+archive_logs() {
+  local current_date=$(date +%Y-%m-%d)
+  local archive_file="$ARCHIVE_DIR/logs_$current_date.tar.gz"
+  
+  create_directory "$ARCHIVE_DIR"
+  tar -czf "$archive_file" -C "$LOG_DIR" .
+}
+
+clean_old_logs() {
+  find "$LOG_DIR" -type f -name "*.log" -mtime +$LOG_RETENTION_DAYS -exec rm -f {} \;
+}
+
+clean_old_archives() {
+  find "$ARCHIVE_DIR" -type f -name "*.tar.gz" -mtime +$ARCHIVE_RETENTION_DAYS -exec rm -f {} \;
+}
+
+send_report() {
+  local report_file="$REPORT_DIR/system_report_$(date +%Y-%m-%d).txt"
+  
+  create_directory "$REPORT_DIR"
+  collect_system_info > "$report_file"
+  
+  mail -s "Ежедневный отчет о состоянии системы" "$EMAIL" < "$report_file"
+}
+
+sync_time() {
+  timedatectl set-timezone $TIMEZONE
+  timedatectl status
+}
+
+clean_temp_files() {
+  rm -rf "$TMP_DIR/*"
+}
+
+sync_time
+archive_logs
+clean_old_logs
+clean_old_archives
+send_report
+clean_temp_files
+
+echo "Задачи выполнены."
